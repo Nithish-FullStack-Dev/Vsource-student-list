@@ -18,22 +18,22 @@ const menuItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   {
     label: "Student Registration",
-    href: "/dashboard/student-registration",
+    href: "/student-registration",
     icon: UserPlus,
   },
   {
     label: "Student Registration List",
-    href: "/dashboard/student-registration-list",
+    href: "/student-registration-list",
     icon: ListChecks,
   },
-  { label: "Sub Admin Form", href: "/dashboard/sub-admin", icon: Users },
-  { label: "Make Payment", href: "/dashboard/make-payment", icon: CreditCard },
+  { label: "Sub Admin Form", href: "/sub-admin", icon: Users },
+  { label: "Make Payment", href: "/make-payment", icon: CreditCard },
   {
     label: "Transactions List",
-    href: "/dashboard/transactions",
+    href: "/transactions",
     icon: FileText,
   },
-  { label: "Employee Logins", href: "/dashboard/employee-logins", icon: Users },
+  { label: "Employee Logins", href: "/employee-logins", icon: Users },
 ];
 
 interface SidebarProps {
