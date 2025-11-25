@@ -18,11 +18,12 @@ import * as XLSX from "xlsx";
 import { Sidebar } from "@/components/layout/sidebar";
 import { TopNav } from "@/components/layout/top-nav";
 import { Pencil, Trash2 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
 export default function StudentRegistrationList() {
   const router = useRouter();
 
-  const [data, setData] = useState<any[]>([]);
+  // const [data, setData] = useState<any[]>([]);
   const [collapsed, setCollapsed] = useState(false);
 
   // Filters
@@ -35,13 +36,30 @@ export default function StudentRegistrationList() {
   const [search, setSearch] = useState("");
 
   // Fetch Students
-  useEffect(() => {
-    (async () => {
-      const res = await fetch("/api/student-registration");
-      const json = await res.json();
-      setData(json.data || []);
-    })();
-  }, []);
+  // useEffect(() => {
+  //   (async () => {
+  //     const res = await fetch("/api/student-registration");
+  //     const json = await res.json();
+  //     console.log(json);
+  //     setData(json.data || []);
+  //   })();
+  // }, []);
+  // FETCH via React Query
+  const fetchStudents = async () => {
+    const res = await fetch("/api/student-registration");
+    const json = await res.json();
+    return json.data || [];
+  };
+
+  const {
+    data = [],
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
+    queryKey: ["student-registrations"],
+    queryFn: fetchStudents,
+  });
 
   // Filter Logic
   const filtered = useMemo(() => {
@@ -77,11 +95,10 @@ export default function StudentRegistrationList() {
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this student?")) return;
 
-    await fetch(`/api/student-registration/${id}`, {
-      method: "DELETE",
-    });
+    await fetch(`/api/student-registration/${id}`, { method: "DELETE" });
 
-    setData((prev) => prev.filter((x) => x.id !== id));
+    // Refresh using React Query
+    refetch();
   };
 
   // Excel Export
@@ -240,20 +257,21 @@ export default function StudentRegistrationList() {
 
               <tbody>
                 {filtered.map((item, index) => (
-                  <tr key={item.id} className="border-b hover:bg-gray-50">
+                  <tr key={item?.id} className="border-b hover:bg-gray-50">
                     <td className="p-2 border">{index + 1}</td>
-                    <td className="p-2 border">{item.id}</td>
-                    <td className="p-2 border">{item.processedBy}</td>
-                    <td className="p-2 border">{item.assigneeName}</td>
-                    <td className="p-2 border">{item.counselorName}</td>
-                    <td className="p-2 border">{item.studentName}</td>
-                    <td className="p-2 border">{item.mobileNumber}</td>
-                    <td className="p-2 border">{item.email}</td>
-                    <td className="p-2 border">{item.abroadMasters}</td>
-                    <td className="p-2 border">{item.fathersName}</td>
-                    <td className="p-2 border">{item.parentMobile}</td>
-                    <td className="p-2 border">{item.city}</td>
-                    <td className="p-2 border">{item.status}</td>
+                    <td className="p-2 border">{item?.stid}</td>
+
+                    <td className="p-2 border">{item?.processedBy}</td>
+                    <td className="p-2 border">{item?.assigneeName}</td>
+                    <td className="p-2 border">{item?.counselorName}</td>
+                    <td className="p-2 border">{item?.studentName}</td>
+                    <td className="p-2 border">{item?.mobileNumber}</td>
+                    <td className="p-2 border">{item?.email}</td>
+                    <td className="p-2 border">{item?.abroadMasters}</td>
+                    <td className="p-2 border">{item?.fathersName}</td>
+                    <td className="p-2 border">{item?.parentMobile}</td>
+                    <td className="p-2 border">{item?.city}</td>
+                    <td className="p-2 border">{item?.status}</td>
 
                     {/* Actions */}
                     <td className="p-2 border text-center flex justify-center gap-2">
@@ -261,17 +279,13 @@ export default function StudentRegistrationList() {
                         size="sm"
                         variant="outline"
                         onClick={() =>
-                          router.push(`/student-registration/${item.id}`)
+                          router.push(`/student-registration/${item?.id}`)
                         }
                       >
                         <Pencil className="w-4 h-4" />
                       </Button>
 
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => handleDelete(item.id)}
-                      >
+                      <Button size="sm" onClick={() => handleDelete(item?.id)}>
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </td>

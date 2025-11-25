@@ -23,6 +23,11 @@ import {
 } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 import { stateDistricts } from "@/lib/stateDistricts";
+interface RegistrationFormProps {
+  mode?: "create" | "edit";
+  defaultValues?: any;
+  id?: string;
+}
 
 type FormData = StudentRegistrationForm;
 
@@ -41,7 +46,11 @@ function generateAcademicYearOptions(): string[] {
   return years;
 }
 
-export default function RegistrationForm() {
+export default function RegistrationForm({
+  mode = "create",
+  defaultValues,
+  id,
+}: RegistrationFormProps) {
   const [loading, setLoading] = useState(false);
 
   const academicYearOptions = useMemo(() => generateAcademicYearOptions(), []);
@@ -52,6 +61,7 @@ export default function RegistrationForm() {
     setValue,
     handleSubmit,
     watch,
+    reset,
     formState: { errors },
   } = useForm<StudentRegistrationForm>({
     resolver: zodResolver(studentRegistrationSchema),
@@ -70,14 +80,25 @@ export default function RegistrationForm() {
       shouldDirty: true,
     });
   }, [setValue, todayStr]);
+  // If editing → load existing data into form
+  useEffect(() => {
+    if (defaultValues) {
+      reset(defaultValues);
+    }
+  }, [defaultValues, reset]);
 
   const onSubmit = async (data: FormData) => {
     setLoading(true);
     try {
-      await studentRegistrationService.create(data);
-      alert("Student Registered Successfully");
+      if (mode === "edit" && id) {
+        await studentRegistrationService.update(id, data);
+        alert("Student updated successfully");
+      } else {
+        await studentRegistrationService.create(data);
+        alert("Student Registered Successfully");
+      }
     } catch (e: any) {
-      alert(e?.response?.data?.error || "Failed to register");
+      alert(e?.response?.data?.error || "Failed to submit");
     } finally {
       setLoading(false);
     }

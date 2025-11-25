@@ -62,11 +62,14 @@ export function TopNav({ onToggleSidebar }: TopNavProps) {
             </DropdownMenuTrigger>
 
             <DropdownMenuContent className="w-44">
+              <DropdownMenuItem>{user?.name}</DropdownMenuItem>
+              <DropdownMenuItem>{user?.role}</DropdownMenuItem>
               <DropdownMenuItem onClick={handleLogout}>
-                {user?.name} Logout
+                {" "}
+                Logout
               </DropdownMenuItem>
             </DropdownMenuContent>
-          </DropdownMenu> 
+          </DropdownMenu>
         </div>
       </header>
 
