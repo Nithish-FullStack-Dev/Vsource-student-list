@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Sidebar } from "@/components/layout/sidebar";
 import { TopNav } from "@/components/layout/top-nav";
 import { Button } from "@/components/ui/button";
@@ -21,14 +21,24 @@ import {
   TableHead,
   TableCell,
 } from "@/components/ui/table";
-import { useQuery } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import api from "@/lib/axios";
 import * as XLSX from "xlsx";
 import { FileDown, Scroll, X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
-// ----------------------------------------------------------------------
-// GST SPLIT FUNCTION
-// ----------------------------------------------------------------------
 const splitGST = (state: string | undefined, totalGst: number) => {
   if (!state) return { cgst: "0", sgst: "0", igst: totalGst.toFixed(2) };
   if (state.toUpperCase() === "TELANGANA") {
@@ -38,9 +48,6 @@ const splitGST = (state: string | undefined, totalGst: number) => {
   return { cgst: "0.00", sgst: "0.00", igst: totalGst.toFixed(2) };
 };
 
-// ----------------------------------------------------------------------
-// INVOICE MODAL COMPONENT
-// ----------------------------------------------------------------------
 function InvoiceModal({ data, onClose }: any) {
   if (!data) return null;
 
@@ -162,9 +169,6 @@ function InvoiceModal({ data, onClose }: any) {
   );
 }
 
-// ----------------------------------------------------------------------
-// MAIN PAGE
-// ----------------------------------------------------------------------
 export default function TransactionsPage() {
   const [collapsed, setCollapsed] = useState(false);
 
@@ -175,25 +179,45 @@ export default function TransactionsPage() {
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [search, setSearch] = useState("");
+  const router = useRouter();
 
   const [openInvoice, setOpenInvoice] = useState<any>(null);
+  const [openEdit, setOpenEdit] = useState<any>(null);
+  const queryClient = useQueryClient();
+
+  const [editForm, setEditForm] = useState({
+    feeType: "",
+    paymentMethod: "",
+    companyBank: "",
+    amount: "",
+  });
+
+  useEffect(() => {
+    if (openEdit) {
+      setEditForm({
+        feeType: openEdit?.feeType || "",
+        paymentMethod: openEdit?.paymentMethod || "",
+        companyBank: openEdit?.companyBank || "",
+        amount: openEdit?.amount || "",
+      });
+    }
+  }, [openEdit]);
 
   // Fetch payments
   const fetchPayments = async () => {
-    const res = await api.get("/api/payment");
+    const res = await api.get(`/api/payment?status=APPROVED`);
     return res.data.data;
   };
 
   const { data = [] } = useQuery({
     queryKey: ["transactions"],
     queryFn: fetchPayments,
+    placeholderData: keepPreviousData,
   });
 
   // Filter logic
   const filtered = useMemo(() => {
     return data.filter((pay: any) => {
-      if (pay.status !== "APPROVED") return false;
-
       const s = pay.student;
 
       if (masters !== "ALL" && masters && s.abroadMasters !== masters)
@@ -236,6 +260,20 @@ export default function TransactionsPage() {
     XLSX.utils.book_append_sheet(book, sheet, "Transactions");
     XLSX.writeFile(book, "transactions.xlsx");
   };
+
+  const updatePaymentMutation = useMutation({
+    mutationFn: async (updatedData: any) => {
+      const res = await api.patch(
+        `/api/payment/${updatedData.id}`,
+        updatedData
+      );
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["transactions"] }); // Refresh table
+      setOpenEdit(null); // Close dialog
+    },
+  });
 
   return (
     <div className="flex w-full bg-slate-100 min-h-screen">
@@ -365,38 +403,41 @@ export default function TransactionsPage() {
 
               <TableBody>
                 {filtered.map((p: any, i: number) => (
-                  <TableRow key={p.id}>
+                  <TableRow key={p.id || i}>
                     <TableCell>{i + 1}</TableCell>
-                    <TableCell>{p.student.stid}</TableCell>
-                    <TableCell>{p.student.processedBy}</TableCell>
-                    <TableCell>{p.student.assigneeName}</TableCell>
-                    <TableCell>{p.student.counselorName}</TableCell>
+                    <TableCell>{p?.student?.stid}</TableCell>
+                    <TableCell>{p?.student?.processedBy}</TableCell>
+                    <TableCell>{p?.student?.assigneeName}</TableCell>
+                    <TableCell>{p?.student?.counselorName}</TableCell>
 
-                    <TableCell>{p.student.studentName}</TableCell>
-                    <TableCell>{p.student.mobileNumber}</TableCell>
+                    <TableCell>{p?.student?.studentName}</TableCell>
+                    <TableCell>{p?.student?.mobileNumber}</TableCell>
 
-                    <TableCell>{p.student.abroadMasters}</TableCell>
+                    <TableCell>{p?.student?.abroadMasters}</TableCell>
 
-                    <TableCell>₹{p.amount}</TableCell>
-                    <TableCell>{p.paymentMethod}</TableCell>
+                    <TableCell>₹{p?.amount}</TableCell>
+                    <TableCell>{p?.paymentMethod}</TableCell>
 
                     <TableCell>
-                      {new Date(p.date).toLocaleDateString()}
+                      {new Date(p?.date).toLocaleDateString()}
                     </TableCell>
 
-                    <TableCell>{p.invoiceNumber}</TableCell>
+                    <TableCell>{p?.invoiceNumber}</TableCell>
 
                     {/* Actions */}
                     <TableCell>
                       <Button
-                        size="sm"
-                        variant="outline"
-                        className="flex gap-2"
+                        className="bg-blue-600 hover:bg-blue-700"
                         onClick={() =>
-                          router.push(`/student-registration/${p.student.id}`)
+                          updatePaymentMutation.mutate({
+                            id: openEdit.id,
+                            ...editForm,
+                          })
                         }
                       >
-                        Edit
+                        {updatePaymentMutation.isPending
+                          ? "Saving..."
+                          : "Submit"}
                       </Button>
                     </TableCell>
 
@@ -439,6 +480,106 @@ export default function TransactionsPage() {
       {openInvoice && (
         <InvoiceModal data={openInvoice} onClose={() => setOpenInvoice(null)} />
       )}
+
+      <Dialog open={!!openEdit} onOpenChange={() => setOpenEdit(null)}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Edit Information</DialogTitle>
+          </DialogHeader>
+
+          {openEdit && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 py-4">
+              <Input
+                value={openEdit?.student?.studentName}
+                readOnly
+                className="bg-gray-100"
+              />
+
+              <Input
+                value={openEdit?.student?.mobileNumber}
+                readOnly
+                className="bg-gray-100"
+              />
+
+              <Input
+                value={openEdit?.student?.abroadMasters}
+                readOnly
+                className="bg-gray-100"
+              />
+
+              <Select
+                value={editForm.feeType}
+                onValueChange={(v) => setEditForm({ ...editForm, feeType: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Fee Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Service Fee">Service Fee</SelectItem>
+                  <SelectItem value="Application Fee">
+                    Application Fee
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select
+                value={editForm.paymentMethod}
+                onValueChange={(v) =>
+                  setEditForm({ ...editForm, paymentMethod: v })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Method" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Cash">Cash</SelectItem>
+                  <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select
+                value={editForm.companyBank}
+                onValueChange={(v) =>
+                  setEditForm({ ...editForm, companyBank: v })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Company Bank" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="HDFC Bank">HDFC</SelectItem>
+                  <SelectItem value="SBI Bank">SBI</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Input
+                value={editForm.amount}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, amount: e.target.value })
+                }
+              />
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button
+              className="bg-blue-600 hover:bg-blue-700"
+              onClick={() =>
+                updatePaymentMutation.mutate({
+                  id: openEdit.id,
+                  ...editForm,
+                })
+              }
+            >
+              {updatePaymentMutation.isPending ? "Saving..." : "Submit"}
+            </Button>
+
+            <Button variant="secondary" onClick={() => setOpenEdit(null)}>
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

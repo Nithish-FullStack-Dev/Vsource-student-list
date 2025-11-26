@@ -4,9 +4,9 @@ import React, { useMemo, useState } from "react";
 import { Sidebar } from "@/components/layout/sidebar";
 import { TopNav } from "@/components/layout/top-nav";
 import { LoginLog, getISTDateISO, getISTTodayISO } from "@/types/loginLog";
-import { loginLogService } from "@/services/loginLog.service";
 import { EmployeeLoginTable } from "@/components/login/EmployeeLoginTable";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import api from "@/lib/axios";
 
 export default function EmployeeLoginPage() {
   const [collapsed, setCollapsed] = useState(false);
@@ -17,23 +17,29 @@ export default function EmployeeLoginPage() {
   );
   const [activeDate, setActiveDate] = useState<string>(() => getISTTodayISO());
 
-  const [page, setPage] = useState(0); // 0-based
+  const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
 
-  // -----------------------------
-  // REAL-TIME FETCH (poll every 5 sec)
-  // -----------------------------
-  const { data: logs = [], isLoading } = useQuery<LoginLog[]>({
-    queryKey: ["employee-login-logs"],
-    queryFn: () => loginLogService.getAll(),
-    refetchInterval: 5000, // 🔥 Auto-refresh every 5 seconds
-    refetchOnWindowFocus: true, // refresh when user switches tab
+  const getLoginUsers = async () => {
+    const { data } = await api.get("/api/employee-logins");
+    return data?.data;
+  };
+
+  const {
+    data: logs = [],
+    isLoading,
+    isError,
+    error,
+  } = useQuery<LoginLog[]>({
+    queryKey: ["employee-login"],
+    queryFn: getLoginUsers,
+    placeholderData: keepPreviousData,
   });
 
   const filtered = useMemo(() => {
     const byDate = logs.filter((log) => {
       if (!activeDate) return true;
-      const logDateISO = getISTDateISO(log.timestamp);
+      const logDateISO = getISTDateISO(log?.loginTime);
       return logDateISO === activeDate;
     });
 
@@ -43,18 +49,15 @@ export default function EmployeeLoginPage() {
 
     return byDate.filter((log) => {
       return (
-        log.employeeId.toLowerCase().includes(term) ||
-        log.name.toLowerCase().includes(term) ||
-        log.username.toLowerCase().includes(term) ||
-        log.role.toLowerCase().includes(term) ||
-        log.loginType.toLowerCase().includes(term)
+        log?.user?.employeeId.toLowerCase().includes(term) ||
+        log?.user?.name.toLowerCase().includes(term) ||
+        log?.user?.email.toLowerCase().includes(term) ||
+        log?.user?.role.toLowerCase().includes(term) ||
+        log?.user?.loginType.toLowerCase().includes(term)
       );
     });
   }, [logs, activeDate, search]);
 
-  // -----------------------------
-  // PAGINATION
-  // -----------------------------
   const paginated = useMemo(() => {
     const start = page * pageSize;
     return filtered.slice(start, start + pageSize);
@@ -72,22 +75,19 @@ export default function EmployeeLoginPage() {
 
   return (
     <div className="flex min-h-screen bg-slate-100">
-      {/* Sidebar */}
       <Sidebar collapsed={collapsed} onToggle={() => setCollapsed((c) => !c)} />
 
-      {/* Main */}
       <div className="flex min-h-screen flex-1 flex-col">
         <TopNav
           sidebarCollapsed={collapsed}
           onToggleSidebar={() => setCollapsed((c) => !c)}
         />
 
-        <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
+        <main className="flex-1 px-3 py-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-6xl">
-            {/* Filters */}
-            <div className="flex flex-col gap-4 border-b pb-4 sm:flex-row sm:items-end sm:justify-between">
+            <div className="flex flex-col gap-4 border-b pb-4 md:flex-row md:items-end md:justify-between">
               <div>
-                <h1 className="text-xl font-semibold sm:text-2xl">
+                <h1 className="text-lg font-semibold sm:text-2xl">
                   Employee Login History
                 </h1>
                 <p className="text-sm text-slate-600 mt-1">
@@ -98,47 +98,46 @@ export default function EmployeeLoginPage() {
                 </p>
               </div>
 
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-                {/* Date Filter */}
-                <div className="flex flex-col text-sm">
+              <div className="flex flex-col gap-3 w-full sm:w-auto sm:flex-row sm:items-end">
+                <div className="flex flex-col text-sm w-full sm:w-auto">
                   <label className="text-xs mb-1 font-medium">Date</label>
                   <input
                     type="date"
                     value={pendingDate}
                     onChange={(e) => setPendingDate(e.target.value)}
-                    className="rounded-lg border shadow-sm px-3 py-2"
+                    className="rounded-lg border shadow-sm px-3 py-2 w-full sm:w-48"
                   />
                 </div>
 
                 <button
                   onClick={handleSubmitDate}
-                  className="bg-red-600 text-white px-4 py-2 rounded-lg shadow-sm hover:bg-red-700"
+                  className="bg-red-600 text-white px-4 py-2 rounded-lg shadow-sm hover:bg-red-700 w-full sm:w-auto"
                 >
                   Submit
                 </button>
 
-                {/* Search */}
-                <div className="flex flex-col text-sm">
+                <div className="flex flex-col text-sm w-full sm:w-auto">
                   <label className="text-xs mb-1 font-medium">Search</label>
                   <input
                     type="text"
                     placeholder="Search..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="rounded-lg border shadow-sm px-3 py-2 sm:w-64"
+                    className="rounded-lg border shadow-sm px-3 py-2 w-full sm:w-64"
                   />
                 </div>
               </div>
             </div>
 
-            {/* Table */}
             <EmployeeLoginTable
-              items={paginated}
+              items={logs}
               loading={isLoading}
               page={page}
               pageSize={pageSize}
               total={filtered.length}
               onPageChange={setPage}
+              isError={isError}
+              error={error}
               onPageSizeChange={(size) => {
                 setPageSize(size);
                 setPage(0);

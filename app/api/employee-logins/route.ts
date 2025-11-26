@@ -50,3 +50,24 @@ export const POST = apiHandler(async (req: Request) => {
     new ApiResponse(201, loginRecord, "Login record added successfully")
   );
 });
+
+export const GET = apiHandler(async () => {
+  const users = await prisma.employeeLoginDetail.findMany({
+    orderBy: { createdAt: "desc" },
+    include: {
+      user: {
+        select: {
+          name: true,
+          email: true,
+          employeeId: true,
+          loginType: true,
+        },
+      },
+    },
+  });
+  if (!users) throw new ApiError(404, "No Users found");
+
+  return NextResponse.json(
+    new ApiResponse(200, users, "Users fetched successfully")
+  );
+});

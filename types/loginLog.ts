@@ -13,19 +13,19 @@ export type LoginRole =
   | "Staff"
   | "Other";
 
-// One login event, mapped from Prisma User
-// User model:
-//  id, employeeId, name, email, loginType, phone, branch, role, date, time...
+export interface User {
+  employeeId: string; // User.employeeId
+  name: string; // User.name
+  email: string; // Usually User.email
+  role: LoginRole; // User.role
+  loginType: string;
+}
 export type LoginLog = {
   id: string;
-  userId?: string;        // Optional link to Prisma User.id
-  employeeId: string;     // User.employeeId
-  name: string;           // User.name
-  username: string;       // Usually User.email
-  role: LoginRole;        // User.role
-  loginType: string;      // User.loginType (e.g., "Web", "Manual", etc.)
-  branch: BranchCode;     // User.branch
-  timestamp: string;      // ISO datetime when they logged in
+  userId?: string;
+  user: User;
+  branch: BranchCode;
+  loginTime: string;
 };
 
 /**
@@ -45,10 +45,10 @@ export function getISTTodayISO(): string {
  */
 export function getISTDateISO(timestamp: string): string {
   const date = new Date(timestamp);
-  const ist = toIST(date);
-  const year = ist.getUTCFullYear();
-  const month = String(ist.getUTCMonth() + 1).padStart(2, "0");
-  const day = String(ist.getUTCDate()).padStart(2, "0");
+  const ist = toIST(date); // Already converted to IST
+  const year = ist.getFullYear(); // ⬅ Use local (IST) getters
+  const month = String(ist.getMonth() + 1).padStart(2, "0");
+  const day = String(ist.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 }
 

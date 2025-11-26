@@ -1,3 +1,4 @@
+import { PaymentStatus } from "@/lib/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";
 import { ApiError } from "@/utils/ApiError";
 import { apiHandler } from "@/utils/apiHandler";
@@ -23,7 +24,7 @@ function generateInvoiceNumber(lastInvoice?: string) {
 
 export const POST = apiHandler(async (req: Request) => {
   const body = await req.json();
-  console.log(body)
+  console.log(body);
   if (
     !body.studentId ||
     !body.feeType ||
@@ -82,8 +83,11 @@ export const POST = apiHandler(async (req: Request) => {
   );
 });
 
-export const GET = apiHandler(async (_req: Request) => {
+export const GET = apiHandler(async (req: Request) => {
+  const { searchParams } = new URL(req.url);
+  const status = searchParams?.get("status") as PaymentStatus | null;
   const payments = await prisma.payment.findMany({
+    where: status ? { status } : undefined,
     orderBy: { createdAt: "desc" },
     include: {
       student: {
@@ -95,6 +99,9 @@ export const GET = apiHandler(async (_req: Request) => {
           abroadMasters: true,
           serviceCharge: true,
           status: true,
+          assigneeName: true,
+          counselorName: true,
+          processedBy: true,
         },
       },
     },

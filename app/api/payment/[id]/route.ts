@@ -5,7 +5,7 @@ import { ApiResponse } from "@/utils/ApiResponse";
 import { NextResponse } from "next/server";
 
 export const GET = apiHandler(async (_req: Request, context: any) => {
-  console.log(context.params);
+
   const { id } = context.params;
 
   if (!id) throw new ApiError(400, "payment student id is required");
