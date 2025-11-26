@@ -18,7 +18,7 @@ function generateInvoiceNumber(lastInvoice?: string) {
     nextNumber = match ? parseInt(match[1]) + 1 : 1;
   }
 
-  return `VS/${yearRange}/B${nextNumber.toString().padStart(2, "0")}`;
+  return `VV/${yearRange}/B${nextNumber.toString().padStart(2, "0")}`;
 }
 
 export const POST = apiHandler(async (req: Request) => {

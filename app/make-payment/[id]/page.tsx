@@ -270,10 +270,11 @@ export default function PaymentFormPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>S.No</TableHead>
+                    <TableHead>Student Name</TableHead>
                     <TableHead>Fee Type</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>GST</TableHead>
-                    <TableHead>Method</TableHead>
+                    <TableHead>Sub Fee Type</TableHead>
+                    <TableHead>Paid Amount</TableHead>
+                    <TableHead>Type of Payment</TableHead>
                     <TableHead>Date</TableHead>
                     <TableHead>Invoice</TableHead>
                     <TableHead>Status</TableHead>
@@ -283,18 +284,15 @@ export default function PaymentFormPage() {
                   {
                     <TableRow>
                       <TableCell>{1}</TableCell>
+                      <TableCell>{history?.student?.studentName}</TableCell>
                       <TableCell>{history?.feeType}</TableCell>
+                      <TableCell>{history?.subFeeType || "N/A"}</TableCell>
                       <TableCell>{history?.amount}</TableCell>
-                      <TableCell>
-                        {history?.gst
-                          ? `${history?.gst}% (${history?.gstAmount})`
-                          : "-"}
-                      </TableCell>
                       <TableCell>{history?.paymentMethod}</TableCell>
+                      <TableCell>{history?.invoiceNumber}</TableCell>
                       <TableCell>
                         {new Date(history?.date).toLocaleDateString()}
                       </TableCell>
-                      <TableCell>{history?.invoiceNumber}</TableCell>
                       <TableCell className="text-green-600">
                         {history?.status}
                       </TableCell>
