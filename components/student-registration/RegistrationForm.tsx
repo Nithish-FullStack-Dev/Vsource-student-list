@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useRouter } from "next/navigation";
 
 import {
   studentRegistrationSchema,
@@ -52,7 +53,7 @@ export default function RegistrationForm({
   defaultValues,
   id,
 }: RegistrationFormProps) {
-  console.log(defaultValues);
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
 
   const academicYearOptions = useMemo(() => generateAcademicYearOptions(), []);
@@ -71,7 +72,19 @@ export default function RegistrationForm({
     reValidateMode: "onChange",
   });
 
+  // ===== watched values for controlled Selects =====
   const stateValue = watch("state");
+  const nationalityValue = watch("nationality");
+  const countryValue = watch("country");
+  const districtValue = watch("district");
+  const abroadMastersValue = watch("abroadMasters");
+  const academicYearValue = watch("academicYear");
+  const officeCityValue = watch("officeCity");
+  const processedByValue = watch("processedBy");
+  const counselorNameValue = watch("counselorName");
+  const assigneeNameValue = watch("assigneeName");
+  const statusValue = watch("status");
+
   const districts = stateDistricts[stateValue] || [];
 
   const todayStr = useMemo(() => new Date().toISOString().split("T")[0], []);
@@ -95,6 +108,7 @@ export default function RegistrationForm({
       if (mode === "edit" && id) {
         await studentRegistrationService.update(id, data);
         alert("Student updated successfully");
+        router.push("/student-registration-list");
       } else {
         await studentRegistrationService.create(data);
         alert("Student Registered Successfully");
@@ -236,22 +250,25 @@ export default function RegistrationForm({
               {/* NATIONALITY */}
               <div>
                 <Label>Nationality*</Label>
-                <Select
-                  onValueChange={(v) =>
-                    setValue("nationality", v, {
-                      shouldValidate: true,
-                      shouldDirty: true,
-                    })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Nationality" />
-                  </SelectTrigger>
-                  <SelectContent className="z-50 bg-white">
-                    <SelectItem value="Indian">Indian</SelectItem>
-                    <SelectItem value="Other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Controller
+                  name="nationality"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      value={field.value || undefined}
+                      defaultValue={field.value || undefined}
+                      onValueChange={(v) => field.onChange(v)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Nationality" />
+                      </SelectTrigger>
+                      <SelectContent className="z-50 bg-white">
+                        <SelectItem value="Indian">Indian</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
                 {errors.nationality && (
                   <p className="text-red-500 text-sm">
                     {errors.nationality.message}
@@ -300,23 +317,27 @@ export default function RegistrationForm({
               {mode === "edit" && (
                 <div>
                   <Label>Status*</Label>
-                  <Select
-                    onValueChange={(v) =>
-                      setValue("status", v, {
-                        shouldValidate: true,
-                        shouldDirty: true,
-                      })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Status" />
-                    </SelectTrigger>
-                    <SelectContent className="z-50 bg-white">
-                      <SelectItem value="CONFIRMED">Confirmed</SelectItem>
-                      <SelectItem value="HOLD">Hold</SelectItem>
-                      <SelectItem value="CANCELLED">Cancelled</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Controller
+                    name="status"
+                    control={control}
+                    render={({ field }) => (
+                      <Select
+                        value={field.value || undefined}
+                        defaultValue={field.value || undefined}
+                        onValueChange={(v) => field.onChange(v)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select Status" />
+                        </SelectTrigger>
+                        <SelectContent className="z-50 bg-white">
+                          {/* 👇 VERY IMPORTANT: value MUST match DB */}
+                          <SelectItem value="CONFIRMED">Confirmed</SelectItem>
+                          <SelectItem value="HOLD">Hold</SelectItem>
+                          <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
                   {errors.status && (
                     <p className="text-red-500 text-sm">
                       {errors.status.message}
@@ -351,6 +372,7 @@ export default function RegistrationForm({
                 <div>
                   <Label>Country*</Label>
                   <Select
+                    value={countryValue || undefined}
                     onValueChange={(v) =>
                       setValue("country", v, {
                         shouldValidate: true,
@@ -377,6 +399,7 @@ export default function RegistrationForm({
                 <div>
                   <Label>State*</Label>
                   <Select
+                    value={stateValue || undefined}
                     onValueChange={(v) =>
                       setValue("state", v, {
                         shouldValidate: true,
@@ -459,6 +482,7 @@ export default function RegistrationForm({
                   <Label>District*</Label>
                   <Select
                     disabled={!stateValue}
+                    value={districtValue || undefined}
                     onValueChange={(v) =>
                       setValue("district", v, {
                         shouldValidate: true,
@@ -532,6 +556,7 @@ export default function RegistrationForm({
               <div>
                 <Label>Abroad Masters*</Label>
                 <Select
+                  value={abroadMastersValue || undefined}
                   onValueChange={(v) =>
                     setValue("abroadMasters", v, {
                       shouldValidate: true,
@@ -625,6 +650,7 @@ export default function RegistrationForm({
               <div>
                 <Label>Academic Year*</Label>
                 <Select
+                  value={academicYearValue || undefined}
                   onValueChange={(v) =>
                     setValue("academicYear", v, {
                       shouldValidate: true,
@@ -653,6 +679,7 @@ export default function RegistrationForm({
               <div>
                 <Label>Office City*</Label>
                 <Select
+                  value={officeCityValue || undefined}
                   onValueChange={(v) =>
                     setValue("officeCity", v, {
                       shouldValidate: true,
@@ -693,6 +720,7 @@ export default function RegistrationForm({
               <div>
                 <Label>Processed By*</Label>
                 <Select
+                  value={processedByValue || undefined}
                   onValueChange={(v) =>
                     setValue("processedBy", v, {
                       shouldValidate: true,
@@ -720,6 +748,7 @@ export default function RegistrationForm({
               <div>
                 <Label>Counselor Name*</Label>
                 <Select
+                  value={counselorNameValue || undefined}
                   onValueChange={(v) =>
                     setValue("counselorName", v, {
                       shouldValidate: true,
@@ -772,6 +801,7 @@ export default function RegistrationForm({
               <div>
                 <Label>Assignee Name*</Label>
                 <Select
+                  value={assigneeNameValue || undefined}
                   onValueChange={(v) =>
                     setValue("assigneeName", v, {
                       shouldValidate: true,

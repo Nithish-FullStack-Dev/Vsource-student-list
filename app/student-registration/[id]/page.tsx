@@ -1,77 +1,57 @@
 "use client";
 
-import { useState } from "react";
-import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-
+import api from "@/lib/axios";
+import RegistrationForm from "@/components/student-registration/RegistrationForm";
 import { Sidebar } from "@/components/layout/sidebar";
 import { TopNav } from "@/components/layout/top-nav";
-import RegistrationForm from "@/components/student-registration/RegistrationForm";
-import api from "@/lib/axios";
+import { useState } from "react";
 
-export default function EditStudentPage() {
-  const router = useRouter();
-  const params = useParams();
-  const id = params?.id as string;
-
+export default function EditStudentPage({
+  params,
+}: {
+  params: { id: string };
+}) {
+  const { id } = params;
   const [collapsed, setCollapsed] = useState(false);
 
-  // Fetch single student with React Query
-  const fetchStudent = async () => {
-    const { data } = await api.get(`/api/student-registration/${id}`);
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["student-registration", id],
+    queryFn: async () => {
+      const res = await api.get(`/api/student-registration/${id}`);
+      const student = res.data.data;
 
-    return data;
-  };
-
-  const {
-    data: student,
-    isLoading,
-    isError,
-  } = useQuery({
-    queryKey: ["student", id],
-    queryFn: fetchStudent,
-    enabled: !!id,
+      return {
+        ...student,
+        // normalize for <input type="date" />
+        dateOfBirth: student.dateOfBirth
+          ? student.dateOfBirth.slice(0, 10)
+          : "",
+        registrationDate: student.registrationDate
+          ? student.registrationDate.slice(0, 10)
+          : "",
+      };
+    },
   });
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen text-lg">
-        Loading student details...
-      </div>
-    );
+    return <p className="p-4">Loading...</p>;
   }
 
-  if (isError || !student) {
-    return (
-      <div className="flex items-center justify-center h-screen text-lg text-red-600">
-        Failed to load student.
-        <button
-          onClick={() => router.push("/student-registration-list")}
-          className="ml-2 underline text-blue-600"
-        >
-          Go Back
-        </button>
-      </div>
-    );
+  if (isError || !data) {
+    return <p className="p-4 text-red-500">Failed to load student</p>;
   }
 
   return (
-    <div className="flex w-full bg-slate-100">
-      {/* Sidebar */}
+    <div className="flex w-full bg-slate-100 min-h-screen">
       <Sidebar collapsed={collapsed} onToggle={() => setCollapsed((c) => !c)} />
-
-      {/* Main Content */}
-      <div className={collapsed ? "flex-1" : "flex-1"}>
+      <div className="flex-1 min-h-screen">
         <TopNav
           sidebarCollapsed={collapsed}
           onToggleSidebar={() => setCollapsed((c) => !c)}
         />
-
-        <div className="max-w-5xl mx-auto p-4 mt-6">
-          <h1 className="text-2xl font-semibold mb-4">Edit Student</h1>
-
-          {/* Pass student to form */}
-          <RegistrationForm mode="edit" defaultValues={student.data} id={id} />
+        <div className="p-4">
+          <RegistrationForm mode="edit" id={id} defaultValues={data} />
         </div>
       </div>
     </div>

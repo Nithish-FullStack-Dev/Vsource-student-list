@@ -34,7 +34,8 @@ export const DELETE = apiHandler(async (_req: Request, context: any) => {
   );
 });
 
-export const GET = apiHandler(async (req: Request, context: any) => {
+// 🔴 FIXED GET – return all fields required by the form
+export const GET = apiHandler(async (_req: Request, context: any) => {
   const { id } = context.params;
 
   if (!id) throw new ApiError(400, "student ID is required");
@@ -44,11 +45,43 @@ export const GET = apiHandler(async (req: Request, context: any) => {
     select: {
       id: true,
       stid: true,
+
+      // personal info
       studentName: true,
-      email: true,
-      serviceCharge: true,
-      payment: true,
       dateOfBirth: true,
+      mobileNumber: true,
+      email: true,
+      parentMobile: true,
+      fathersName: true,
+      nationality: true,
+      gender: true,
+      registrationDate: true,
+
+      // address
+      addressLine1: true,
+      addressLine2: true,
+      country: true,
+      state: true,
+      city: true,
+      district: true,
+      pincode: true,
+
+      // course details
+      abroadMasters: true,
+      courseName: true,
+      passportNumber: true,
+      serviceCharge: true,
+      academicYear: true,
+      officeCity: true,
+      processedBy: true,
+      counselorName: true,
+      assigneeName: true,
+
+      // status / others
+      status: true,
+      payment: true,
+      createdAt: true,
+      updatedAt: true,
     },
   });
 
