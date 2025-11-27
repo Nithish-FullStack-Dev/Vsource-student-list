@@ -91,20 +91,7 @@ export const GET = apiHandler(async (req: Request) => {
     where: status ? { status } : undefined,
     orderBy: { createdAt: "desc" },
     include: {
-      student: {
-        select: {
-          id: true,
-          stid: true,
-          studentName: true,
-          mobileNumber: true,
-          abroadMasters: true,
-          serviceCharge: true,
-          status: true,
-          assigneeName: true,
-          counselorName: true,
-          processedBy: true,
-        },
-      },
+      student: true,
     },
   });
   if (!payments) throw new ApiError(404, "No payments found");
