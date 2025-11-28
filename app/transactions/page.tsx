@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { Sidebar } from "@/components/layout/sidebar";
 import { TopNav } from "@/components/layout/top-nav";
 import { Button } from "@/components/ui/button";
@@ -29,7 +29,7 @@ import {
 } from "@tanstack/react-query";
 import api from "@/lib/axios";
 import * as XLSX from "xlsx";
-import { FileDown, Scroll, X } from "lucide-react";
+import { FileDown, Loader2, Scroll, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
   Dialog,
@@ -38,137 +38,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { paymentOptions } from "../make-payment/[id]/page";
+// import { paymentOptions } from "../make-payment/[id]/page";
 
-const splitGST = (state: string | undefined, totalGst: number) => {
-  if (!state) return { cgst: "0", sgst: "0", igst: totalGst.toFixed(2) };
-  if (state.toUpperCase() === "TELANGANA") {
-    const half = (totalGst / 2).toFixed(2);
-    return { cgst: half, sgst: half, igst: "0.00" };
-  }
-  return { cgst: "0.00", sgst: "0.00", igst: totalGst.toFixed(2) };
-};
-
-function InvoiceModal({ data, onClose }: any) {
-  if (!data) return null;
-
-  const p = data;
-  const s = p.student;
-
-  const gst = splitGST(s.state, p.gstAmount || 0);
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex justify-center py-10 z-50 overflow-y-auto">
-      <div className="bg-white w-[210mm] min-h-[297mm] p-10 shadow-xl relative">
-        <Button
-          variant="outline"
-          size="icon"
-          className="absolute top-4 right-4"
-          onClick={onClose}
-        >
-          <X className="w-4 h-4" />
-        </Button>
-
-        <h1 className="text-2xl font-bold text-center mb-2">
-          VSOURCE VARSITY PRIVATE LIMITED
-        </h1>
-
-        <p className="text-center text-sm mb-6">
-          #PLOT NO:13, VASANTH NAGAR, DHARMA REDDY COLONY PHASE-2,
-          <br />
-          KPHB COLONY, HYDERABAD, TELANGANA - 500085
-        </p>
-
-        <div className="border p-4 rounded-lg">
-          <div className="flex justify-between">
-            <div>
-              <p>
-                <strong>Invoice:</strong> {p.invoiceNumber}
-              </p>
-              <p>
-                <strong>Date:</strong> {new Date(p.date).toLocaleDateString()}
-              </p>
-            </div>
-
-            <div>
-              <p>
-                <strong>GST NO:</strong> 36AAKCV9728P1Z8
-              </p>
-              <p>
-                <strong>CIN:</strong> U85499TS2025PTC197291
-              </p>
-            </div>
-          </div>
-
-          <hr className="my-4" />
-
-          <p>
-            <strong>Student Name:</strong> {s.studentName}
-          </p>
-          <p>
-            <strong>Email:</strong> {s.email}
-          </p>
-          <p>
-            <strong>Phone:</strong> {s.mobileNumber}
-          </p>
-          <p>
-            <strong>Masters:</strong> {s.abroadMasters}
-          </p>
-
-          <hr className="my-4" />
-
-          <table className="w-full text-sm border">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="p-2 border">Description</th>
-                <th className="p-2 border">Amount</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              <tr>
-                <td className="p-2 border">Service Fee</td>
-                <td className="p-2 border">₹{p.amount}</td>
-              </tr>
-
-              <tr>
-                <td className="p-2 border">CGST</td>
-                <td className="p-2 border">₹{gst.cgst}</td>
-              </tr>
-
-              <tr>
-                <td className="p-2 border">SGST</td>
-                <td className="p-2 border">₹{gst.sgst}</td>
-              </tr>
-
-              <tr>
-                <td className="p-2 border">IGST</td>
-                <td className="p-2 border">₹{gst.igst}</td>
-              </tr>
-
-              <tr className="font-bold">
-                <td className="p-2 border">Total</td>
-                <td className="p-2 border">
-                  ₹{(p.amount + (p.gstAmount || 0)).toFixed(2)}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-
-          <p className="mt-4">
-            <strong>Payment:</strong> {p.paymentMethod} - {p.referenceNo}
-          </p>
-
-          <img
-            src="/assets/stamp.jpg"
-            alt="stamp"
-            className="w-32 mt-6 opacity-90"
-          />
-        </div>
-      </div>
-    </div>
-  );
-}
+const paymentOptions = [
+  { value: "online", label: "By Online Payment" },
+  { value: "cash", label: "By Cash" },
+  { value: "cash-deposit", label: "By Cash-Deposit" },
+  { value: "neft", label: "By NEFT" },
+  { value: "card-swipe", label: "By Card Swipe" },
+  { value: "cheque", label: "By Cheque" },
+  { value: "link", label: "By Link" },
+  { value: "cash-swipe", label: "By Cash & Swipe" },
+  { value: "online-cash", label: "By Online & Cash" },
+];
 
 export default function TransactionsPage() {
   const [collapsed, setCollapsed] = useState(false);
@@ -191,15 +73,20 @@ export default function TransactionsPage() {
     paymentMethod: "",
     amount: "",
     status: "",
+    invoiceNumber: "",
+    date: "",
   });
-
   useEffect(() => {
     if (openEdit) {
+      const formattedDate = openEdit.date ? openEdit.date.split("T")[0] : "";
+
       setEditForm({
-        feeType: openEdit?.feeType || "",
-        paymentMethod: openEdit?.paymentMethod || "",
-        amount: openEdit?.amount || "",
-        status: openEdit?.status || "", // ✅ added
+        feeType: openEdit.feeType || "",
+        paymentMethod: openEdit.paymentMethod || "",
+        amount: openEdit.amount || "",
+        status: openEdit.status || "",
+        invoiceNumber: openEdit.invoiceNumber || "",
+        date: formattedDate,
       });
     }
   }, [openEdit]);
@@ -428,7 +315,10 @@ export default function TransactionsPage() {
                     <TableCell>
                       <Button
                         className="bg-blue-600 hover:bg-blue-700"
-                        onClick={() => setOpenEdit(p)}
+                        onClick={() => {
+                          console.log(p);
+                          setOpenEdit(p);
+                        }}
                       >
                         Edit
                       </Button>
@@ -440,7 +330,9 @@ export default function TransactionsPage() {
                         variant="outline"
                         size="sm"
                         className="flex gap-2"
-                        onClick={() => setOpenInvoice(p)}
+                        onClick={() =>
+                          window.open(`/invoice/${p.id}`, "_blank")
+                        }
                       >
                         <Scroll className="w-4 h-4" />
                         Open
@@ -470,9 +362,9 @@ export default function TransactionsPage() {
       </div>
 
       {/* Invoice Modal */}
-      {openInvoice && (
+      {/* {openInvoice && (
         <InvoiceModal data={openInvoice} onClose={() => setOpenInvoice(null)} />
-      )}
+      )} */}
 
       <Dialog open={!!openEdit} onOpenChange={() => setOpenEdit(null)}>
         <DialogContent className="max-w-3xl">
@@ -565,6 +457,21 @@ export default function TransactionsPage() {
                   setEditForm({ ...editForm, amount: e.target.value })
                 }
               />
+
+              <Input
+                value={editForm.invoiceNumber}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, invoiceNumber: e.target.value })
+                }
+              />
+
+              <Input
+                type="date"
+                value={editForm.date}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, date: e.target.value })
+                }
+              />
             </div>
           )}
 
@@ -573,7 +480,14 @@ export default function TransactionsPage() {
               className="bg-blue-600 hover:bg-blue-700"
               disabled={updatePaymentMutation?.isPending}
               onClick={() => {
-                const payload = { ...editForm };
+                const payload = {
+                  ...editForm,
+                  amount: Number(editForm.amount), // convert to number
+                  date: editForm.date
+                    ? new Date(editForm.date).toISOString()
+                    : null,
+                };
+
                 updatePaymentMutation.mutate({
                   id: openEdit.id,
                   ...payload,
