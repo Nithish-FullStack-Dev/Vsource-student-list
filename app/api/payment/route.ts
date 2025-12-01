@@ -170,8 +170,7 @@ export const GET = apiHandler(async (req: Request) => {
   let filters: any = {};
   if (status) filters.status = status;
 
-  // 🔐 Role-based visibility control
-  if (currentUser.role !== "Admin" && currentUser.role !== "Accountant") {
+  if (currentUser.role !== "Admin" && currentUser.role !== "Accounts") {
     filters.student = { createdBy: currentUser.id };
   }
 
