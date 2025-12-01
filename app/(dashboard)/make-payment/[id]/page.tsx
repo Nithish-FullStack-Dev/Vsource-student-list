@@ -134,6 +134,7 @@ export default function PaymentFormPage() {
         description: "Payment entry created.",
       });
       queryClient.invalidateQueries({ queryKey: ["payments", id] });
+      window.location.reload();
       router.push("/make-payment");
     },
     onError: (error: any) => {
@@ -211,17 +212,18 @@ export default function PaymentFormPage() {
                       type="number"
                       className="h-9"
                       placeholder="GST %"
-                      value={gstPercent}
-                      onChange={(e) =>
-                        setGstPercent(Math.max(0, Number(e.target.value)))
-                      }
-                      max={0}
+                      value={gstPercent === 0 ? "" : gstPercent}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setGstPercent(v === "" ? 0 : Math.max(0, Number(v)));
+                      }}
                     />
+
                     <Input
                       type="number"
                       className="h-9"
                       placeholder="GST Amount"
-                      value={gstAmount}
+                      value={gstAmount === 0 ? "" : gstAmount}
                       readOnly
                     />
                   </div>
