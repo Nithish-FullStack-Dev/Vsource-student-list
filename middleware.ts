@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
+import { roleAccess } from "./utils/roleAccess";
 
 const PUBLIC_PATHS = [
-  "/auth/login",
   "/",
+  "/auth/login",
+  "/auth/forgot-password",
+  "/auth/reset-password",
   "/api/auth/login-step1",
   "/api/auth/login-step2",
   "/api/auth/logout",
-  "/auth/forgot-password",
-  "/auth/reset-password",
 ];
 
 export function middleware(req: NextRequest) {
@@ -21,34 +22,40 @@ export function middleware(req: NextRequest) {
 
   if (isPublic) {
     if (token && pathname.startsWith("/auth/login")) {
-      return NextResponse.redirect(new URL("/dashboard", req.url));
+      const decoded: any = jwt.decode(token);
+      const role = decoded?.role;
+      const redirectMap: Record<string, string> = {
+        ADMIN: "/dashboard",
+        SUB_ADMIN: "/student-registration",
+        ACCOUNTS: "/transactions",
+      };
+      return NextResponse.redirect(
+        new URL(redirectMap[role] || "/dashboard", req.url)
+      );
     }
     return NextResponse.next();
   }
 
-  const isProtectedRoute =
-    pathname.startsWith("/dashboard") ||
-    pathname.startsWith("/student") ||
-    pathname.startsWith("/employees") ||
-    pathname.startsWith("/payments") ||
-    pathname.startsWith("/transactions");
+  if (!token) return redirectToLogin(req, pathname);
 
-  if (isProtectedRoute) {
-    if (!token) {
-      return redirectToLogin(req, pathname);
+  try {
+    const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
+    const role = decoded?.role;
+    const allowedRoutes = roleAccess[role] || [];
+    const isAllowed =
+      allowedRoutes.includes("*") ||
+      allowedRoutes.some((route) => pathname.startsWith(route));
+
+    if (!isAllowed) {
+      return NextResponse.redirect(new URL("/dashboard", req.url));
     }
 
-    try {
-      jwt.verify(token, process.env.JWT_SECRET!);
-      return NextResponse.next();
-    } catch (error) {
-      const res = redirectToLogin(req, pathname);
-      res.cookies.delete("token");
-      return res;
-    }
+    return NextResponse.next();
+  } catch {
+    const res = redirectToLogin(req, pathname);
+    res.cookies.delete("token");
+    return res;
   }
-
-  return NextResponse.next();
 }
 
 function redirectToLogin(req: NextRequest, currentPath: string) {

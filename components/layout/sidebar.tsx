@@ -27,6 +27,8 @@ import {
   Footprints,
 } from "lucide-react";
 import Image from "next/image";
+import { useAuth } from "@/hooks/use-auth";
+import { roleAccess } from "@/utils/roleAccess";
 
 const menuItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -48,9 +50,13 @@ const menuItems = [
 ];
 
 export function AppSidebar() {
+  const { user } = useAuth();
   const { state } = useSidebar();
   const pathname = usePathname();
   const isActive = (path: string) => pathname === path;
+
+  const allowedRoutes =
+    user?.role && roleAccess[user.role] ? roleAccess[user.role] : [];
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
       <SidebarContent>
@@ -86,26 +92,32 @@ export function AppSidebar() {
           <SidebarGroupLabel>Main Menu</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems.map((item) => {
-                const active = pathname === item.href;
-                return (
-                  <SidebarMenuItem key={item.label}>
-                    <SidebarMenuButton asChild isActive={isActive(item.href)}>
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        className={cn(
-                          "flex items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-sidebar-accent",
-                          active && "bg-primary/10 text-primary font-semibold"
-                        )}
-                      >
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.label}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
+              {menuItems
+                ?.filter(
+                  (item) =>
+                    allowedRoutes.includes("*") ||
+                    allowedRoutes.includes(item.href)
+                )
+                ?.map((item) => {
+                  const active = pathname === item.href;
+                  return (
+                    <SidebarMenuItem key={item.label}>
+                      <SidebarMenuButton asChild isActive={isActive(item.href)}>
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          className={cn(
+                            "flex items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-sidebar-accent",
+                            active && "bg-primary/10 text-primary font-semibold"
+                          )}
+                        >
+                          <item.icon className="h-4 w-4" />
+                          <span>{item.label}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

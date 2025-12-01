@@ -45,12 +45,23 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      await authService.loginStep2({
+      const res = await authService.loginStep2({
         employeeId: form2.employeeId,
-        tempToken, // FIXED REQUIRED FIELD
+        tempToken,
       });
 
-      router.push(redirectTo);
+      document.cookie = `token=${res.data.finalToken}; path=/;`;
+
+      const meRes = await authService.me();
+      const role = meRes.data.user.role;
+
+      const redirectMap: Record<string, string> = {
+        Admin: "/dashboard",
+        SUB_ADMIN: "/student-registration",
+        Accounts: "/transactions",
+      };
+
+      router.push(redirectMap[role] || "/dashboard");
     } catch (err: any) {
       setError(err?.response?.data?.message || "Login failed");
     } finally {

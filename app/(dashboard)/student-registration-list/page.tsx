@@ -321,7 +321,7 @@ export default function StudentRegistrationList() {
                     <TableHead className="border-r">Father Mobile</TableHead>
                     <TableHead className="border-r">Town</TableHead>
                     <TableHead className="border-r">Status</TableHead>
-                    {user?.role !== "Accountant" && (
+                    {user?.role !== "Accounts" && (
                       <TableHead className="border-r text-center">
                         Actions
                       </TableHead>
@@ -381,7 +381,7 @@ export default function StudentRegistrationList() {
                         </span>
                       </TableCell>
 
-                      {user?.role !== "Accountant" && (
+                      {user?.role !== "Accounts" && (
                         <TableCell className="border-r text-center flex justify-center gap-2">
                           <Button
                             variant="ghost"
@@ -436,7 +436,7 @@ export default function StudentRegistrationList() {
             >
               {item.status}
             </div>
-            {user?.role !== "Accountant" && (
+            {user?.role !== "Accounts" && (
               <div className="flex justify-end gap-2 mt-3">
                 <Button
                   size="sm"

@@ -36,6 +36,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import axios from "axios";
+import { useAuth } from "@/hooks/use-auth";
 // import { paymentOptions } from "../make-payment/[id]/page";
 
 const paymentOptions = [
@@ -52,15 +53,14 @@ const paymentOptions = [
 
 export default function TransactionsPage() {
   // Filters
+  const { user } = useAuth();
   const [masters, setMasters] = useState("");
   const [team, setTeam] = useState("");
   const [year, setYear] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [search, setSearch] = useState("");
-  const router = useRouter();
 
-  const [openInvoice, setOpenInvoice] = useState<any>(null);
   const [openEdit, setOpenEdit] = useState<any>(null);
   const queryClient = useQueryClient();
 
@@ -269,7 +269,7 @@ export default function TransactionsPage() {
                 <TableHead>Payment Type</TableHead>
                 <TableHead>Date</TableHead>
                 <TableHead>Invoice No</TableHead>
-                <TableHead>Actions</TableHead>
+                {user?.role !== "Accounts" && <TableHead>Actions</TableHead>}
                 <TableHead>Invoice</TableHead>
                 <TableHead>Approve</TableHead>
               </TableRow>
@@ -299,17 +299,19 @@ export default function TransactionsPage() {
                   <TableCell>{p?.invoiceNumber}</TableCell>
 
                   {/* Actions */}
-                  <TableCell>
-                    <Button
-                      className="bg-blue-600 hover:bg-blue-700"
-                      onClick={() => {
-                        console.log(p);
-                        setOpenEdit(p);
-                      }}
-                    >
-                      Edit
-                    </Button>
-                  </TableCell>
+                  {user?.role !== "Accounts" && (
+                    <TableCell>
+                      <Button
+                        className="bg-blue-600 hover:bg-blue-700"
+                        onClick={() => {
+                          console.log(p);
+                          setOpenEdit(p);
+                        }}
+                      >
+                        Edit
+                      </Button>
+                    </TableCell>
+                  )}
 
                   {/* Invoice Button */}
                   <TableCell>
