@@ -51,8 +51,6 @@ const paymentOptions = [
 ];
 
 export default function TransactionsPage() {
-  const [collapsed, setCollapsed] = useState(false);
-
   // Filters
   const [masters, setMasters] = useState("");
   const [team, setTeam] = useState("");

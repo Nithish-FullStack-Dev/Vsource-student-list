@@ -11,10 +11,41 @@ export const GET = apiHandler(async (req: Request) => {
   const { searchParams } = new URL(req.url);
   const status = searchParams.get("status") as RegistrationStatus | null;
 
+  const token = cookies().get("token")?.value;
+  if (!token) throw new ApiError(401, "Not authenticated");
+
+  let decoded: any;
+  let currentUser: any;
+
+  try {
+    decoded = jwt.verify(token, process.env.JWT_SECRET!);
+
+    currentUser = await prisma.user.findUnique({
+      where: { id: decoded.id },
+      select: {
+        id: true,
+        role: true,
+      },
+    });
+
+    if (!currentUser) {
+      throw new ApiError(401, "User not found");
+    }
+  } catch (error) {
+    throw new ApiError(401, "Invalid or expired token");
+  }
+
+  let filters: any = {};
+  if (status) filters.status = status;
+
+  if (currentUser.role === "SUB_ADMIN") {
+    filters.createdBy = currentUser.id;
+  }
+
   const students = await prisma.studentRegistration.findMany({
-    where: status ? { status } : undefined,
+    where: filters,
     orderBy: { createdAt: "asc" },
-    include: { payment: true },
+    include: { payment: true, createdByUser: true },
   });
 
   return NextResponse.json(

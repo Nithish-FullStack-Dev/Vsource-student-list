@@ -25,11 +25,13 @@ import { Pencil, Trash2 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import axios from "axios";
+import { useAuth } from "@/hooks/use-auth";
 
 // (optional) util if you still want static year options somewhere else
 // but here we’ll derive years from data itself.
 
 export default function StudentRegistrationList() {
+  const { user } = useAuth();
   const router = useRouter();
   const queryClient = useQueryClient();
 
@@ -319,9 +321,11 @@ export default function StudentRegistrationList() {
                     <TableHead className="border-r">Father Mobile</TableHead>
                     <TableHead className="border-r">Town</TableHead>
                     <TableHead className="border-r">Status</TableHead>
-                    <TableHead className="border-r text-center">
-                      Actions
-                    </TableHead>
+                    {user?.role !== "Accountant" && (
+                      <TableHead className="border-r text-center">
+                        Actions
+                      </TableHead>
+                    )}
                   </TableRow>
                 </TableHeader>
 
@@ -377,26 +381,28 @@ export default function StudentRegistrationList() {
                         </span>
                       </TableCell>
 
-                      <TableCell className="border-r text-center flex justify-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-blue-600 hover:bg-blue-50"
-                          onClick={() =>
-                            router.push(`/student-registration/${item.id}`)
-                          }
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-red-600 hover:bg-red-50"
-                          onClick={() => handleDelete(item.id)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </TableCell>
+                      {user?.role !== "Accountant" && (
+                        <TableCell className="border-r text-center flex justify-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-blue-600 hover:bg-blue-50"
+                            onClick={() =>
+                              router.push(`/student-registration/${item.id}`)
+                            }
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-red-600 hover:bg-red-50"
+                            onClick={() => handleDelete(item.id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))}
                 </TableBody>
@@ -430,18 +436,22 @@ export default function StudentRegistrationList() {
             >
               {item.status}
             </div>
-            <div className="flex justify-end gap-2 mt-3">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => router.push(`/student-registration/${item.id}`)}
-              >
-                <Pencil className="w-4 h-4" />
-              </Button>
-              <Button size="sm" onClick={() => handleDelete(item.id)}>
-                <Trash2 className="w-4 h-4" />
-              </Button>
-            </div>
+            {user?.role !== "Accountant" && (
+              <div className="flex justify-end gap-2 mt-3">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() =>
+                    router.push(`/student-registration/${item.id}`)
+                  }
+                >
+                  <Pencil className="w-4 h-4" />
+                </Button>
+                <Button size="sm" onClick={() => handleDelete(item.id)}>
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
           </Card>
         ))}
         {filtered.length === 0 && !isLoading && (
