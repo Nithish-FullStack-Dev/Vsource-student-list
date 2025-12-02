@@ -1,18 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { authService } from "@/services/auth.service";
 import { useRouter, useSearchParams } from "next/navigation";
+import Image from "next/image";
 
 export default function LoginPage() {
   const [step, setStep] = useState<1 | 2>(1);
   const [loading, setLoading] = useState(false);
   const [tempToken, setTempToken] = useState<string | null>(null);
+
   const [form1, setForm1] = useState({ email: "", password: "" });
   const [form2, setForm2] = useState({ employeeId: "" });
+
+  const [employeeName, setEmployeeName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const router = useRouter();
@@ -35,6 +39,26 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+
+  /* ---------------- Employee ID Auto Matching (Step 2 UI only) ---------------- */
+  useEffect(() => {
+    const id = form2.employeeId.trim();
+    if (!id) {
+      setEmployeeName(null);
+      return;
+    }
+
+    const check = setTimeout(async () => {
+      try {
+        const res = await authService.getUserByEmployeeId(id);
+        setEmployeeName(res.data.user?.name || null);
+      } catch {
+        setEmployeeName(null);
+      }
+    }, 400); // debounce
+
+    return () => clearTimeout(check);
+  }, [form2.employeeId]);
 
   /* ----------------------------- STEP 2 ----------------------------- */
   const handleStep2 = async (e: React.FormEvent) => {
@@ -71,7 +95,18 @@ export default function LoginPage() {
 
   return (
     <main className="flex min-h-screen w-full items-center justify-center bg-gradient-to-br from-red-50 via-slate-50 to-sky-50 px-4">
-      <Card className="w-full max-w-md rounded-2xl shadow-md">
+      {/* -------- LOGO -------- */}
+      <div className="absolute top-32 w-full flex justify-center">
+        <Image
+          src="/assets/logo.webp"
+          alt="VSource Logo"
+          width={120}
+          height={120}
+          className="drop-shadow rounded-xl"
+        />
+      </div>
+
+      <Card className="w-full max-w-md rounded-2xl shadow-md mt-28">
         <CardHeader>
           <CardTitle className="text-center text-lg">
             VSource Education Admin Login
@@ -100,7 +135,7 @@ export default function LoginPage() {
             </p>
           )}
 
-          {/* ---------- STEP 1 UI ---------- */}
+          {/* ---------- STEP 1 ---------- */}
           {step === 1 && (
             <form className="space-y-3" onSubmit={handleStep1}>
               <div className="space-y-1">
@@ -130,6 +165,7 @@ export default function LoginPage() {
                   }
                 />
               </div>
+
               <div className="text-right">
                 <button
                   type="button"
@@ -146,7 +182,7 @@ export default function LoginPage() {
             </form>
           )}
 
-          {/* ---------- STEP 2 UI ---------- */}
+          {/* ---------- STEP 2 ---------- */}
           {step === 2 && (
             <form className="space-y-3" onSubmit={handleStep2}>
               <div className="space-y-1">
@@ -161,6 +197,19 @@ export default function LoginPage() {
                   }
                 />
               </div>
+
+              {/* ---------- SHOW EMPLOYEE NAME LIVE ---------- */}
+              {form2.employeeId && (
+                <div className="rounded-md border bg-slate-50 px-3 py-2 text-xs">
+                  {employeeName ? (
+                    <span className="text-green-700 font-medium">
+                      ✓ Employee: {employeeName}
+                    </span>
+                  ) : (
+                    <span className="text-red-500">No matching employee</span>
+                  )}
+                </div>
+              )}
 
               <Button className="mt-2 w-full" disabled={loading} type="submit">
                 {loading ? "Signing in..." : "Login"}

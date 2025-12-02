@@ -47,4 +47,12 @@ export const authService = {
       withCredentials: true,
     });
   },
+  async getUserByEmployeeId(employeeId: string) {
+    const res = await axios.post(
+      "/api/auth/get-user-by-employeeId",
+      { employeeId },
+      { withCredentials: true }
+    );
+    return res.data;
+  },
 };
