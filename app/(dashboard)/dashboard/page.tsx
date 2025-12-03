@@ -102,18 +102,53 @@ export default async function DashboardPage() {
     name: m.abroadMasters,
     value: m._count.id,
   }));
-  // Logins Today
-  const startOfToday = new Date();
-  startOfToday.setHours(0, 0, 0, 0);
 
-  const endOfToday = new Date();
-  endOfToday.setHours(23, 59, 59, 999);
+  // Convert to IST date range
+  function getISTDayRange() {
+    const now = new Date();
+
+    // IST offset = +5:30 = 330 minutes
+    const istOffset = 330;
+
+    // Convert current UTC time → IST
+    const istNow = new Date(now.getTime() + istOffset * 60000);
+
+    // Start of IST day
+    const startIST = new Date(
+      istNow.getFullYear(),
+      istNow.getMonth(),
+      istNow.getDate(),
+      0,
+      0,
+      0,
+      0
+    );
+
+    // End of IST day
+    const endIST = new Date(
+      istNow.getFullYear(),
+      istNow.getMonth(),
+      istNow.getDate(),
+      23,
+      59,
+      59,
+      999
+    );
+
+    // Convert back to UTC so database matches correctly
+    const startUTC = new Date(startIST.getTime() - istOffset * 60000);
+    const endUTC = new Date(endIST.getTime() - istOffset * 60000);
+
+    return { startUTC, endUTC };
+  }
+
+  const { startUTC, endUTC } = getISTDayRange();
 
   const loginsToday = await prisma.employeeLoginDetail.count({
     where: {
       loginTime: {
-        gte: startOfToday,
-        lte: endOfToday,
+        gte: startUTC,
+        lte: endUTC,
       },
     },
   });

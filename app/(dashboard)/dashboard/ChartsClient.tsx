@@ -78,20 +78,22 @@ export default function ChartsClient({
       {/* Masters Distribution */}
       <div className="bg-white rounded-2xl p-6 shadow-md">
         <h2 className="font-semibold text-lg mb-4">Masters Distribution</h2>
+
         <div className="w-full h-64">
           <ResponsiveContainer>
-            <LineChart data={mastersData}>
+            <BarChart data={mastersData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
-              <YAxis />
+              <YAxis allowDecimals={false} />
               <Tooltip />
-              <Line
-                type="monotone"
+
+              <Bar
                 dataKey="value"
-                stroke="#16a34a"
-                strokeWidth={3}
+                radius={[10, 10, 0, 0]}
+                barSize={40}
+                fill="#16a34a"
               />
-            </LineChart>
+            </BarChart>
           </ResponsiveContainer>
         </div>
       </div>
