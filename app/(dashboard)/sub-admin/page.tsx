@@ -58,7 +58,7 @@ export default function SubAdminPage() {
     return filtered.slice(start, start + pageSize);
   }, [filtered, page, pageSize]);
 
-  const totalPages = Math.ceil(filtered.length / pageSize);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
 
   const handleChange = (field: keyof FormState, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -78,7 +78,7 @@ export default function SubAdminPage() {
       staffName: item.name,
       mobile: item.phone,
       email: item.email,
-      password: item.password || "",
+      password: "", // never load hashed password into form
       branchCode: item.branch as BranchCode,
     });
     setErrors({});
@@ -87,10 +87,15 @@ export default function SubAdminPage() {
 
   const validate = () => {
     const newErrors: FormErrors = {};
-    if (!form.staffName) newErrors.staffName = "Required";
-    if (!form.mobile) newErrors.mobile = "Required";
-    if (!form.email) newErrors.email = "Required";
-    if (!form.password) newErrors.password = "Required";
+    if (!form.staffName.trim()) newErrors.staffName = "Required";
+    if (!form.mobile.trim()) newErrors.mobile = "Required";
+    if (!form.email.trim()) newErrors.email = "Required";
+
+    // password required only on create
+    if (!editingId && !form.password.trim()) {
+      newErrors.password = "Required";
+    }
+
     if (!form.branchCode) newErrors.branchCode = "Required";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -99,24 +104,37 @@ export default function SubAdminPage() {
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (editingId) {
-        return subAdminService.update(editingId, {
+        const payload: {
+          name: string;
+          email: string;
+          phone: string;
+          branch: string;
+          password?: string;
+        } = {
           name: form.staffName,
           email: form.email,
           phone: form.mobile,
-          password: form.password,
           branch: form.branchCode,
-        });
-      } else {
-        return subAdminService.create({
-          name: form.staffName,
-          email: form.email,
-          phone: form.mobile,
-          password: form.password,
-          branch: form.branchCode,
-          loginType: "SUB_ADMIN",
-          role: "SUB_ADMIN",
-        });
+        };
+
+        // only send password if user typed a new one
+        if (form.password.trim()) {
+          payload.password = form.password;
+        }
+
+        return subAdminService.update(editingId, payload);
       }
+
+      // create
+      return subAdminService.create({
+        name: form.staffName,
+        email: form.email,
+        phone: form.mobile,
+        password: form.password, // backend will hash this
+        branch: form.branchCode,
+        loginType: "SUB_ADMIN",
+        role: "SUB_ADMIN",
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sub-admins"] });
@@ -178,7 +196,7 @@ export default function SubAdminPage() {
           onDelete={handleDelete}
         />
 
-        <div className="flex justify-between items-center mt-4">
+        <div className="mt-4 flex items-center justify-between">
           <Button
             variant="outline"
             disabled={page === 0}
@@ -189,7 +207,7 @@ export default function SubAdminPage() {
 
           <div className="flex items-center gap-2">
             <p className="text-sm">
-              Page {page + 1} of {totalPages || 1}
+              Page {page + 1} of {totalPages}
             </p>
 
             <Select
@@ -227,7 +245,7 @@ export default function SubAdminPage() {
           open={modalOpen}
           loading={saveMutation.isPending}
           title={editingId ? "Edit Sub Admin" : "Add Sub Admin"}
-          mode={editingId ? "add" : "edit"}
+          mode={editingId ? "edit" : "add"} // ✅ fixed
           form={form}
           errors={errors}
           onChange={handleChange}

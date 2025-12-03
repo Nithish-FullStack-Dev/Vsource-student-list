@@ -6,6 +6,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 import { getChangedFields, USER_ALLOWED_FIELDS } from "@/utils/auditFields";
+import bcrypt from "bcryptjs";
 
 export const PUT = apiHandler(async (req: Request, context: any) => {
   const { id } = context.params;
@@ -45,11 +46,15 @@ export const PUT = apiHandler(async (req: Request, context: any) => {
   if (!oldUser) {
     throw new ApiError(404, `No user found with id ${id}`);
   }
+  if (body.password) {
+    body.password = await bcrypt.hash(body.password, 10); // 🔐 hash password
+  }
 
   const updatedUser = await prisma.user.update({
     where: { id },
     data: body,
   });
+
 
   if (!updatedUser) {
     throw new ApiError(404, `No user found with id ${id}`);
@@ -148,9 +153,11 @@ export const DELETE = apiHandler(async (req: Request, context: any) => {
 
 export const GET = apiHandler(async (_req: Request, context: any) => {
   const { id } = context.params;
+
   if (!id) {
     throw new ApiError(400, "User ID is required");
   }
+
   const user = await prisma.user.findUnique({
     where: { id },
   });
@@ -159,7 +166,12 @@ export const GET = apiHandler(async (_req: Request, context: any) => {
     throw new ApiError(404, `No user found with this id ${id}`);
   }
 
+  // Remove sensitive fields before sending response
+  const safeUser: any = { ...user };
+  delete safeUser.password;   // 🚨 never expose password
+
   return NextResponse.json(
-    new ApiResponse(200, user, "user fetched successfully")
+    new ApiResponse(200, safeUser, "user fetched successfully")
   );
 });
+

@@ -39,7 +39,7 @@ type Props = {
   errors: FormErrors;
   onChange: (field: keyof FormState, value: string) => void;
   onClose: () => void;
-  onSubmit: (e: React.FormEvent) => void;
+  onSubmit: () => void;
   mode: "add" | "edit";
 };
 
@@ -55,16 +55,21 @@ export const SubAdminModal: React.FC<Props> = ({
   mode,
 }) => {
   const [showPassword, setShowPassword] = useState(false);
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg rounded-2xl">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
 
-        {/* Form Start */}
-        <form onSubmit={onSubmit} className="space-y-4 py-2">
-          {/* Staff Name */}
+        <form
+          className="space-y-4 py-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            onSubmit();
+          }}
+        >
           <div>
             <Label>Staff Name</Label>
             <Input
@@ -77,20 +82,6 @@ export const SubAdminModal: React.FC<Props> = ({
             )}
           </div>
 
-          {/* Employee ID */}
-          {/* <div>
-            <Label>Employee ID</Label>
-            <Input
-              value={form.employeeId}
-              onChange={(e) => onChange("employeeId", e.target.value)}
-              placeholder="Enter Employee ID (e.g., VS-0001)"
-            />
-            {errors.employeeId && (
-              <p className="text-xs text-red-600">{errors.employeeId}</p>
-            )}
-          </div> */}
-
-          {/* Mobile */}
           <div>
             <Label>Mobile Number</Label>
             <Input
@@ -109,7 +100,6 @@ export const SubAdminModal: React.FC<Props> = ({
             )}
           </div>
 
-          {/* Email */}
           <div>
             <Label>Email</Label>
             <Input
@@ -123,36 +113,36 @@ export const SubAdminModal: React.FC<Props> = ({
             )}
           </div>
 
-          {/* Password */}
-          {mode === "edit" && (
-            <div>
-              <Label>Password</Label>
-              <div className="relative">
-                <Input
-                  type={showPassword ? "text" : "password"}
-                  value={form.password}
-                  onChange={(e) => onChange("password", e.target.value)}
-                  placeholder="Enter Password"
-                  className="pr-10"
-                />
-
-                {/* Eye Icon Button */}
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((prev) => !prev)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-
-              {errors.password && (
-                <p className="text-xs text-red-600">{errors.password}</p>
-              )}
+          {/* Password – used for both add and edit */}
+          <div>
+            <Label>
+              {mode === "add" ? "Password" : "New Password (optional)"}
+            </Label>
+            <div className="relative">
+              <Input
+                type={showPassword ? "text" : "password"}
+                value={form.password}
+                onChange={(e) => onChange("password", e.target.value)}
+                placeholder={
+                  mode === "add"
+                    ? "Enter password"
+                    : "Leave blank to keep existing password"
+                }
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
-          )}
+            {errors.password && (
+              <p className="text-xs text-red-600">{errors.password}</p>
+            )}
+          </div>
 
-          {/* Branch Select */}
           <div>
             <Label>Office Branch</Label>
             <Select
@@ -177,7 +167,6 @@ export const SubAdminModal: React.FC<Props> = ({
             )}
           </div>
 
-          {/* Buttons */}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
